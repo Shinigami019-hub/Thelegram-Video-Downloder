@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced SRT Translator</title>
+    <link rel="stylesheet" href="styles.css">
+<style type="text/css" id="dcoder_stylesheet">body {
+    font-family: Arial, sans-serif;
+    text-align: center;
+    margin: 20px;
+}
+
+h1 {
+    color: #333;
+}
+
+#output {
+    white-space: pre-wrap;
+    text-align: left;
+    background-color: #f4f4f4;
+    padding: 10px;
+    border-radius: 5px;
+}
+</style></head>
+<body>
+    <h1>SRT File Translator</h1>
+    <input type="file" id="fileInput" accept=".srt">
+    <button onclick="translateFile()">Translate</button>
+    <pre id="output"></pre>
+    <script src="script.js"></script>
+
+<script type="text/javascript" id="dcoder_script">async function translateTextWithGPT(text) {
+    const apiKey = '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';
+    const url = 'https://api.openai.com/v1/chat/completions';
+
+    const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${apiKey}`
+        },
+        body: JSON.stringify({
+            model: 'gpt-3.5-turbo',
+            messages: [
+                {role: 'system', content: 'You are a translator. Translate the following English text to Hinglish.'},
+                {role: 'user', content: text}
+            ],
+            max_tokens: 1000
+        })
+    });
+
+    const data = await response.json();
+    return data.choices[0].message.content.trim();
+}
+
+async function translateFile() {
+    const fileInput = document.getElementById('fileInput');
+    const output = document.getElementById('output');
+
+    if (fileInput.files.length === 0) {
+        alert("Please select a file.");
+        return;
+    }
+
+    const file = fileInput.files[0];
+    const reader = new FileReader();
+
+    reader.onload = async function(event) {
+        const srtText = event.target.result;
+        const srtLines = srtText.split('\n');
+        let translatedSRT = '';
+
+        for (let line of srtLines) {
+            if (line.trim() && !line.match(/^\d+$/) && !line.match(/-->/)) {
+                const translatedLine = await translateTextWithGPT(line);
+                translatedSRT += translatedLine + '\n';
+            } else {
+                translatedSRT += line + '\n';
+            }
+        }
+
+        output.textContent = translatedSRT;
+    };
+
+    reader.readAsText(file);
+}
+</script></body></html>
